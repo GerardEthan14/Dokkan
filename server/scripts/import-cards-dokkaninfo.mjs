@@ -49,7 +49,8 @@ function decodeElement(element) {
   const classDigit = Number(element[0]);
   const typeDigit = Number(element[1]);
   return {
-    class: CLASS_MAP[classDigit === 0 ? 0 : 1] ?? null,
+    // Vérifié sur plusieurs cas : classDigit 0 et 1 = Super, 2 (et plus) = Extreme.
+    class: CLASS_MAP[classDigit >= 2 ? 1 : 0] ?? null,
     type: TYPE_MAP[typeDigit] ?? null,
   };
 }
