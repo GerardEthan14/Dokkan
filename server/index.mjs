@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Readable } from 'node:stream';
 import { db } from './db.mjs';
 import { DUPE_LEVELS, MAX_DUPE_LEVEL, clampDupeLevel, percentForLevel } from './dupeLevels.mjs';
 
@@ -8,8 +9,59 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Domaines dont on accepte de relayer les images (protection contre un usage
+// comme proxy ouvert vers n'importe quelle URL).
+const ALLOWED_IMAGE_HOSTS = new Set(['dokkaninfo.com', 'www.dokkaninfo.com']);
+
+function toProxyUrl(imageUrl) {
+  if (!imageUrl) return null;
+  // Seul dokkaninfo.com bloque le hotlinking : les autres sources d'images
+  // (ex: wikia) n'ont pas besoin de passer par le proxy.
+  try {
+    const { hostname } = new URL(imageUrl);
+    if (!ALLOWED_IMAGE_HOSTS.has(hostname)) return imageUrl;
+  } catch {
+    return imageUrl;
+  }
+  return `/img-proxy?u=${encodeURIComponent(imageUrl)}`;
+}
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// dokkaninfo.com bloque le chargement de ses images depuis un autre site
+// (protection anti-hotlink) : on les relaie nous-mêmes depuis le serveur,
+// qui lui n'est pas concerné par cette restriction basée sur le Referer.
+app.get('/img-proxy', async (req, res) => {
+  const target = req.query.u;
+  if (typeof target !== 'string') return res.status(400).end();
+
+  let parsed;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return res.status(400).end();
+  }
+  if (parsed.protocol !== 'https:' || !ALLOWED_IMAGE_HOSTS.has(parsed.hostname)) {
+    return res.status(400).end();
+  }
+
+  try {
+    const upstream = await fetch(parsed, {
+      headers: {
+        Referer: 'https://dokkaninfo.com/',
+        'User-Agent': 'Mozilla/5.0 (compatible; DokkanCollectionManager/1.0)',
+      },
+    });
+    if (!upstream.ok || !upstream.body) return res.status(upstream.status).end();
+
+    res.set('Content-Type', upstream.headers.get('content-type') || 'image/png');
+    res.set('Cache-Control', 'public, max-age=604800, immutable');
+    Readable.fromWeb(upstream.body).pipe(res);
+  } catch {
+    res.status(502).end();
+  }
+});
 
 function rowToCard(row) {
   const dupeLevel = row.dupe_level || 0;
@@ -25,7 +77,7 @@ function rowToCard(row) {
     cost: row.cost,
     categories: JSON.parse(row.categories || '[]'),
     links: JSON.parse(row.links || '[]'),
-    imageUrl: row.image_url,
+    imageUrl: toProxyUrl(row.image_url),
     leaderSkill: row.leader_skill,
     passive: row.passive,
     owned: !!row.owned,
