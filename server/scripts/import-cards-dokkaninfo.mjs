@@ -61,7 +61,44 @@ function buildImageUrl(card) {
   return `https://dokkaninfo.com/assets/global/en/character/thumb/card_${n}_thumb/card_${n}_thumb.png`;
 }
 
-function main() {
+// Avoir un resource_id/icon_id ne garantit pas que l'image existe vraiment
+// sur le serveur de dokkaninfo.com (certaines cartes n'ont jamais eu
+// d'icône mise en ligne). On vérifie donc chaque URL en vrai avant de
+// garder la carte, avec un nombre limité de requêtes en parallèle pour ne
+// pas surcharger le site.
+async function imageExists(url) {
+  try {
+    const res = await fetch(url, { method: 'HEAD' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function filterCardsWithRealImage(cards) {
+  const CONCURRENCY = 20;
+  const kept = [];
+  let checked = 0;
+  let index = 0;
+
+  async function worker() {
+    while (index < cards.length) {
+      const card = cards[index++];
+      const url = buildImageUrl(card);
+      if (url && (await imageExists(url))) kept.push(card);
+      checked++;
+      if (checked % 200 === 0 || checked === cards.length) {
+        process.stdout.write(`\rVérification des images... ${checked}/${cards.length}`);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  process.stdout.write('\n');
+  return kept;
+}
+
+async function main() {
   if (!fs.existsSync(inputPath)) {
     console.error(`Fichier introuvable : ${inputPath}`);
     console.error("Lance d'abord : node server/scripts/inspect-local-page.mjs \"chemin/vers/ta/sauvegarde.txt\"");
@@ -141,8 +178,12 @@ function main() {
     const current = lineages.get(lineageKey);
     if (!current || card.id > current.id) lineages.set(lineageKey, card);
   }
-  const cards = [...lineages.values()];
-  console.log(`${cards.length} cartes après regroupement par lignée (forme la plus aboutie gardée).`);
+  const groupedCards = [...lineages.values()];
+  console.log(`${groupedCards.length} cartes après regroupement par lignée (forme la plus aboutie gardée).`);
+
+  console.log('Vérification que chaque image existe vraiment (peut prendre plusieurs minutes)...');
+  const cards = await filterCardsWithRealImage(groupedCards);
+  console.log(`${groupedCards.length - cards.length} cartes retirées car leur image n'existe pas réellement.`);
 
   const upsert = db.prepare(`
     INSERT INTO cards (id, name, rarity, class, type, image_url, updated_at)
@@ -159,7 +200,6 @@ function main() {
 
   const rarityCounts = {};
   let imported = 0;
-  let missingImage = 0;
   const keptIds = new Set(cards.map((c) => `dki-${c.id}`));
 
   db.exec('BEGIN');
@@ -185,7 +225,6 @@ function main() {
       const { type, class: cardClass } = decodeElement(card.element);
       const rarity = RARITY_MAP[card.rarity] ?? String(card.rarity ?? '?');
       const imageUrl = buildImageUrl(card);
-      if (!imageUrl) missingImage++;
 
       const id = `dki-${card.id}`;
       upsert.run(id, card.name, rarity, cardClass, type, imageUrl);
@@ -201,13 +240,13 @@ function main() {
 
   console.log(`\nImport terminé : ${imported} cartes importées.`);
   console.log('Répartition par rareté :', rarityCounts);
-  if (missingImage > 0) {
-    console.log(`Attention : ${missingImage} cartes sans image (ni resource_id ni icon_id).`);
-  }
   console.log(
     "\nNe lance pas aussi `npm run import-cards` (source LR/UR séparée) après ceci : les identifiants" +
       ' ne correspondent pas entre les deux sources et tu obtiendrais des cartes en double.',
   );
 }
 
-main();
+main().catch((err) => {
+  console.error("Erreur pendant l'import :", err);
+  process.exit(1);
+});
