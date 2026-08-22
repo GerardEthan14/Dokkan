@@ -18,24 +18,37 @@ async function probe(name, url, opts = {}) {
   const entry = { name, url };
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (DokkanCollectionManager diagnostic probe)' },
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/json,*/*',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+        ...opts.headers,
+      },
       ...opts,
     });
     entry.status = res.status;
     entry.contentType = res.headers.get('content-type');
+    entry.server = res.headers.get('server');
+    entry.cfRay = res.headers.get('cf-ray');
     const text = await res.text();
     entry.bodyLength = text.length;
+    entry.looksLikeCloudflareChallenge = /Just a moment|cf-browser-verification|Attention Required|__cf_chl/i.test(text);
     try {
       const json = JSON.parse(text);
       entry.jsonPreview = JSON.stringify(json).slice(0, 4000);
     } catch {
-      entry.textPreview = text.slice(0, 500);
+      entry.textPreview = text.slice(0, 1500);
     }
     entry._rawText = text; // gardé en mémoire pour analyse locale, pas écrit tel quel
   } catch (err) {
     entry.error = err.message;
   }
-  console.log(`- ${name}: ${entry.status ?? 'ERREUR'} ${entry.error ?? ''} (${entry.bodyLength ?? 0} octets)`);
+  console.log(
+    `- ${name}: ${entry.status ?? 'ERREUR'} ${entry.error ?? ''} (${entry.bodyLength ?? 0} octets)` +
+      (entry.cfRay ? ' [Cloudflare]' : '') +
+      (entry.looksLikeCloudflareChallenge ? ' [PAGE DE VÉRIFICATION ANTI-ROBOT]' : ''),
+  );
   return entry;
 }
 
@@ -50,11 +63,15 @@ function extractNextData(html) {
 }
 
 async function main() {
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
   const results = [];
 
   console.log('1. Récupération de la page /cards (HTML) et extraction de __NEXT_DATA__...');
   const cardsPage = await probe('dokkaninfo-cards-page', `${BASE}/cards`);
   results.push(cardsPage);
+  if (cardsPage.textPreview) {
+    console.log('   Aperçu de la réponse :\n   ' + cardsPage.textPreview.slice(0, 300).replace(/\n/g, '\n   '));
+  }
 
   let buildId = null;
   if (cardsPage._rawText) {
