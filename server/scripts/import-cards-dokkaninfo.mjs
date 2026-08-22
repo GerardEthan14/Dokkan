@@ -55,6 +55,17 @@ function decodeElement(element) {
   };
 }
 
+// Fenêtre de regroupement des lignées : les formes d'un même "cycle" de
+// sortie ont des id qui se suivent de 1 en 1 (SSR -> UR, Dokkan Awaken) ou
+// de 10 en 10 (UR -> LR, ré-sortie plus aboutie plus tard) — diviser par 100
+// regroupe les deux cas. Un très ancien personnage réédité bien plus tard
+// avec un tout autre bloc d'id (écart de plusieurs centaines/milliers) ne
+// sera pas relié : le lier par nom serait plus risqué (deux personnages
+// différents peuvent partager un nom, ex: plusieurs Vegeta LR indépendants).
+function lineageKeyFor(id) {
+  return `dki-lineage-${Math.floor(id / 100)}`;
+}
+
 function buildImageUrl(card) {
   const n = card.resource_id ?? card.icon_id;
   if (!n) return null;
@@ -203,7 +214,7 @@ async function main() {
   // (id le plus élevé du groupe) ; le joueur pourra le changer librement.
   const defaultStageByLineage = new Map();
   for (const card of cards) {
-    const lineageKey = `dki-lineage-${Math.floor(card.id / 10)}`;
+    const lineageKey = lineageKeyFor(card.id);
     const current = defaultStageByLineage.get(lineageKey);
     if (!current || card.id > current.id) defaultStageByLineage.set(lineageKey, card);
   }
@@ -229,7 +240,7 @@ async function main() {
       const rarity = RARITY_MAP[card.rarity] ?? String(card.rarity ?? '?');
       const imageUrl = buildImageUrl(card);
       const id = `dki-${card.id}`;
-      const lineageKey = `dki-lineage-${Math.floor(card.id / 10)}`;
+      const lineageKey = lineageKeyFor(card.id);
 
       upsert.run(id, lineageKey, card.name, rarity, cardClass, type, imageUrl);
       const defaultStage = defaultStageByLineage.get(lineageKey);
@@ -251,7 +262,7 @@ async function main() {
     throw err;
   }
 
-  const lineageCount = new Set(cards.map((c) => Math.floor(c.id / 10))).size;
+  const lineageCount = new Set(cards.map((c) => lineageKeyFor(c.id))).size;
   console.log(`\nImport terminé : ${imported} cartes importées, regroupées en ${lineageCount} lignées/personnages.`);
   console.log('Répartition par rareté :', rarityCounts);
   console.log(
