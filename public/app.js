@@ -185,7 +185,7 @@ function openModal(card) {
   }
 
   async function save({ reopen } = {}) {
-    const res = await fetch(`/api/collection/${card.lineageKey}`, {
+    const res = await fetch(`/api/collection/${encodeURIComponent(card.lineageKey)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(local),
