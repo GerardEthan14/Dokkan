@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dokkan Collection Manager</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>🐉 Dokkan Collection Manager</h1>
+    <div id="stats" class="stats"></div>
+  </header>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Rechercher un nom, un titre, une catégorie..." />
+
+    <select id="filterRarity">
+      <option value="">Toute rareté</option>
+      <option value="LR">LR</option>
+      <option value="UR">UR</option>
+    </select>
+
+    <select id="filterType">
+      <option value="">Tout type</option>
+      <option value="AGL">AGL</option>
+      <option value="TEQ">TEQ</option>
+      <option value="INT">INT</option>
+      <option value="STR">STR</option>
+      <option value="PHY">PHY</option>
+    </select>
+
+    <select id="filterClass">
+      <option value="">Super / Extreme</option>
+      <option value="Super">Super</option>
+      <option value="Extreme">Extreme</option>
+    </select>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-filter="">Toutes</button>
+    <button class="tab" data-filter="owned">Possédées</button>
+    <button class="tab" data-filter="missing">Manquantes</button>
+    <button class="tab" data-filter="not_maxed">Doublons disponibles</button>
+    <button class="tab" data-filter="not_awakened">Non Dokkan Awaken</button>
+  </nav>
+
+  <main id="grid" class="grid"></main>
+  <p id="empty" class="empty hidden">Aucune carte ne correspond à ces filtres.</p>
+
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal">
+      <button id="modalClose" class="modal-close" aria-label="Fermer">✕</button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

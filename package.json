@@ -1,0 +1,14 @@
+{
+  "name": "dokkan-collection-manager",
+  "version": "1.0.0",
+  "description": "Gestionnaire de collection pour Dragon Ball Z Dokkan Battle : cartes manquantes, % de doublons et suivi du Dokkan Awaken.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server/index.mjs",
+    "import-cards": "node server/scripts/import-cards.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
