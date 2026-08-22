@@ -37,11 +37,40 @@ if (buffer[0] === 0xff && buffer[1] === 0xfe) {
   byteOffset = 3;
 }
 
-const data = buffer.toString(encoding.startsWith('utf16') ? 'utf16le' : 'utf8', byteOffset);
+let data = buffer.toString(encoding.startsWith('utf16') ? 'utf16le' : 'utf8', byteOffset);
 console.log(`Encodage détecté : ${encoding}`);
 console.log(`Fichier lu : ${(data.length / 1024 / 1024).toFixed(1)} Mo, ${data.length} caractères.`);
 
+// Firefox (et d'autres navigateurs) "afficher le code source" produit une page
+// HTML qui encode le vrai code source pour l'affichage (chaque " devient
+// &quot;, chaque < devient &lt;, avec des <span> ajoutés pour la coloration).
+// On détecte ce cas et on "désenveloppe" pour retrouver le vrai code source.
+let unwrapped = false;
+if (data.includes('id="viewsource"') || data.includes("id='viewsource'")) {
+  console.log('Page "voir le code source" détectée, désenveloppement en cours...');
+  const bodyMatch = data.match(/<body[^>]*id=["']viewsource["'][^>]*>([\s\S]*)<\/body>/);
+  let inner = bodyMatch ? bodyMatch[1] : data;
+  inner = inner.replace(/<\/?span[^>]*>/g, '');
+  inner = inner
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&'); // doit être en dernier
+  data = inner;
+  unwrapped = true;
+  console.log(`Après désenveloppement : ${(data.length / 1024 / 1024).toFixed(1)} Mo.`);
+
+  // Sauvegarde le code source reconstruit pour les prochaines étapes (pas besoin
+  // de renvoyer ce fichier, il reste en local à côté du projet).
+  const reconstructedPath = path.join(__dirname, '..', '..', 'data', 'dokkaninfo-cards-source.html');
+  fs.writeFileSync(reconstructedPath, data, 'utf8');
+  console.log(`Code source reconstruit sauvegardé dans : ${reconstructedPath}`);
+}
+
 const report = {
+  wasViewSourceWrapped: unwrapped,
   fileSizeChars: data.length,
   detectedEncoding: encoding,
   firstBytesHex: buffer.subarray(0, 32).toString('hex'),
