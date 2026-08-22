@@ -6,13 +6,19 @@
 // à la main dans un navigateur, puis reconstruites avec
 // `inspect-local-page.mjs`. Voir le README pour la procédure complète.
 //
-// Décodage des champs (vérifié manuellement sur un cas connu : "Super Saiyan
-// Goku" id 1000010 = SSR / Super / AGL) :
+// Décodage des champs (vérifié manuellement sur des cas connus : "Super
+// Saiyan Goku" id 1000010 = SSR / Super / AGL, et "Third Eye Gomah"
+// id 1032311 = LR / Extreme / AGL) :
 //   - rarity : 0=N, 1=R, 2=SR, 3=SSR, 4=UR, 5=LR
-//   - element (ex: "00", "13") : 1er chiffre = classe (0=Super, 1=Extreme),
-//     2e chiffre = type (0=AGL, 1=TEQ, 2=INT, 3=STR, 4=PHY)
+//   - element (ex: "00", "20") : 1er chiffre = classe (0=Super, autre
+//     chiffre=Extreme — la valeur exacte du "Extreme" varie selon les cartes,
+//     mais 0 signifie toujours Super), 2e chiffre = type (0=AGL, 1=TEQ,
+//     2=INT, 3=STR, 4=PHY)
 //   - image : https://dokkaninfo.com/assets/global/en/character/thumb/card_{n}_thumb/card_{n}_thumb.png
 //     où n = resource_id (si présent) sinon icon_id
+//   - les identifiants commençant par "9" sont des apparitions boss/ennemi
+//     du personnage (réutilisées en combat), pas de vraies cartes à
+//     collectionner : elles sont exclues de l'import.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +49,7 @@ function decodeElement(element) {
   const classDigit = Number(element[0]);
   const typeDigit = Number(element[1]);
   return {
-    class: CLASS_MAP[classDigit] ?? null,
+    class: CLASS_MAP[classDigit === 0 ? 0 : 1] ?? null,
     type: TYPE_MAP[typeDigit] ?? null,
   };
 }
@@ -76,6 +82,12 @@ function main() {
   const allCards = JSON.parse(decoded);
   console.log(`${allCards.length} cartes trouvées.`);
 
+  // Les identifiants commençant par "9" sont des apparitions boss/ennemi
+  // (le personnage réutilisé comme adversaire en combat), pas de vraies
+  // cartes à collectionner. On les retire avant tout regroupement.
+  const playableCards = allCards.filter((c) => !String(c.id).startsWith('9'));
+  console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi retirées.`);
+
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
   // Dokkan Awaken -> TUR après une évolution supplémentaire). Le jeu leur
   // attribue des identifiants consécutifs pour la même lignée (ex: 1000010,
@@ -84,7 +96,7 @@ function main() {
   // qui compte pour la collection, le statut "Dokkan Awaken" étant de toute
   // façon suivi séparément via la case à cocher.
   const lineages = new Map();
-  for (const card of allCards) {
+  for (const card of playableCards) {
     if (!card.id || !card.name) continue;
     const lineageKey = Math.floor(card.id / 10);
     const current = lineages.get(lineageKey);
