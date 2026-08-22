@@ -58,12 +58,15 @@ function decodeElement(element) {
 // Fenêtre de regroupement des lignées : les formes d'un même "cycle" de
 // sortie ont des id qui se suivent de 1 en 1 (SSR -> UR, Dokkan Awaken) ou
 // de 10 en 10 (UR -> LR, ré-sortie plus aboutie plus tard) — diviser par 100
-// regroupe les deux cas. Un très ancien personnage réédité bien plus tard
-// avec un tout autre bloc d'id (écart de plusieurs centaines/milliers) ne
-// sera pas relié : le lier par nom serait plus risqué (deux personnages
-// différents peuvent partager un nom, ex: plusieurs Vegeta LR indépendants).
-function lineageKeyFor(id) {
-  return `dki-lineage-${Math.floor(id / 100)}`;
+// regroupe les deux cas. MAIS la plage d'id seule ne suffit pas : des
+// personnages complètement différents (ex: Vegeta SSJ4, Krillin, Majin Kuu)
+// peuvent tomber dans la même fourchette par coïncidence. On exige donc EN
+// PLUS que le nom soit rigoureusement identique avant de regrouper deux
+// cartes. Un très ancien personnage réédité bien plus tard avec un tout
+// autre bloc d'id (écart de plusieurs centaines/milliers) ne sera pas
+// relié : élargir encore la fenêtre serait trop risqué.
+function lineageKeyFor(id, name) {
+  return `dki-lineage-${Math.floor(id / 100)}::${name}`;
 }
 
 function buildImageUrl(card) {
@@ -214,7 +217,7 @@ async function main() {
   // (id le plus élevé du groupe) ; le joueur pourra le changer librement.
   const defaultStageByLineage = new Map();
   for (const card of cards) {
-    const lineageKey = lineageKeyFor(card.id);
+    const lineageKey = lineageKeyFor(card.id, card.name);
     const current = defaultStageByLineage.get(lineageKey);
     if (!current || card.id > current.id) defaultStageByLineage.set(lineageKey, card);
   }
@@ -243,7 +246,7 @@ async function main() {
       const rarity = RARITY_MAP[card.rarity] ?? String(card.rarity ?? '?');
       const imageUrl = buildImageUrl(card);
       const id = `dki-${card.id}`;
-      const lineageKey = lineageKeyFor(card.id);
+      const lineageKey = lineageKeyFor(card.id, card.name);
 
       upsert.run(id, lineageKey, card.name, rarity, cardClass, type, imageUrl);
       rarityCounts[rarity] = (rarityCounts[rarity] ?? 0) + 1;
@@ -269,7 +272,7 @@ async function main() {
     throw err;
   }
 
-  const lineageCount = new Set(cards.map((c) => lineageKeyFor(c.id))).size;
+  const lineageCount = new Set(cards.map((c) => lineageKeyFor(c.id, c.name))).size;
   console.log(`\nImport terminé : ${imported} cartes importées, regroupées en ${lineageCount} lignées/personnages.`);
   console.log('Répartition par rareté :', rarityCounts);
   console.log(
