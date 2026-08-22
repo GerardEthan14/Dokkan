@@ -27,7 +27,7 @@ console.log(`Lecture de ${inputPath}...`);
 const data = fs.readFileSync(inputPath, 'utf8');
 console.log(`${(data.length / 1024 / 1024).toFixed(1)} Mo lus.`);
 
-const candidateAttrs = ['data-page', 'data-cards', 'data-props', 'x-data', 'data-initial-state'];
+const candidateAttrs = ['v-bind:cardsjson', 'cardsjson', 'data-page', 'data-cards', 'data-props', 'x-data', 'data-initial-state'];
 const found = [];
 
 for (const attr of candidateAttrs) {
@@ -108,6 +108,17 @@ if (found.length > 0) {
     }
   }
 }
+
+// Cherche à quoi ressemble une vraie URL d'image de carte (ce fichier vient
+// de "voir le code source", donc les URLs ne sont pas ré-écrites comme dans
+// un fichier "page complète" enregistré par le navigateur).
+const imgMatches = [];
+const imgRegex = /src="([^"]*card[^"]*\.(?:png|webp|jpg))"/gi;
+let imgMatch;
+while (imgMatches.length < 5 && (imgMatch = imgRegex.exec(data)) !== null) {
+  imgMatches.push(imgMatch[1]);
+}
+report.sampleImageUrls = imgMatches;
 
 fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
 console.log(`Résultat écrit dans : ${outPath}`);
