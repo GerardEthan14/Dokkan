@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "start": "node server/index.mjs",
-    "import-cards": "node server/scripts/import-cards.mjs"
+    "import-cards": "node server/scripts/import-cards.mjs",
+    "import-cards-full": "node server/scripts/import-cards-fandom.mjs"
   },
   "dependencies": {
     "express": "^4.19.2"

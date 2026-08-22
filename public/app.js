@@ -1,3 +1,8 @@
+// % affiché en jeu selon le nombre de doublons appliqués : 0 doublon = 55%,
+// puis 69%, 79%, 89%, et 100% une fois rainbow (4 doublons).
+const DUPE_LEVELS = [55, 69, 79, 89, 100];
+const MAX_DUPE_LEVEL = DUPE_LEVELS.length - 1;
+
 const state = {
   filter: '',
   search: '',
@@ -105,9 +110,9 @@ function openModal(card) {
     <div class="field-row">
       <label>% actuel (en jeu)</label>
       <div class="stepper">
-        <button type="button" id="pct-down">-10</button>
-        <output id="pct-value">${card.currentPercent}%</output>
-        <button type="button" id="pct-up">+10</button>
+        <button type="button" id="pct-down">-1</button>
+        <output id="pct-value">${DUPE_LEVELS[card.dupeLevel]}%</output>
+        <button type="button" id="pct-up">+1</button>
       </div>
     </div>
 
@@ -134,7 +139,7 @@ function openModal(card) {
 
   const local = {
     owned: card.owned,
-    currentPercent: card.currentPercent,
+    dupeLevel: card.dupeLevel,
     dupesInStock: card.dupesInStock,
     dokkanAwakened: card.dokkanAwakened,
   };
@@ -144,10 +149,11 @@ function openModal(card) {
   const upgradeHint = modalContent.querySelector('#upgradeHint');
 
   function refreshHint() {
-    const potential = Math.min(100, local.currentPercent + local.dupesInStock * 10);
-    if (local.owned && potential > local.currentPercent) {
+    const potentialLevel = Math.min(MAX_DUPE_LEVEL, local.dupeLevel + local.dupesInStock);
+    const potentialPercent = DUPE_LEVELS[potentialLevel];
+    if (local.owned && potentialLevel > local.dupeLevel) {
       upgradeHint.classList.remove('hidden');
-      upgradeHint.textContent = `Tu peux monter cette carte à ${potential}% avec les doublons que tu as en stock !`;
+      upgradeHint.textContent = `Tu peux monter cette carte à ${potentialPercent}% avec les doublons que tu as en stock !`;
     } else {
       upgradeHint.classList.add('hidden');
     }
@@ -187,14 +193,14 @@ function openModal(card) {
   });
 
   modalContent.querySelector('#pct-up').addEventListener('click', () => {
-    local.currentPercent = Math.min(100, local.currentPercent + 10);
-    pctValue.textContent = `${local.currentPercent}%`;
+    local.dupeLevel = Math.min(MAX_DUPE_LEVEL, local.dupeLevel + 1);
+    pctValue.textContent = `${DUPE_LEVELS[local.dupeLevel]}%`;
     refreshHint();
     scheduleSave();
   });
   modalContent.querySelector('#pct-down').addEventListener('click', () => {
-    local.currentPercent = Math.max(0, local.currentPercent - 10);
-    pctValue.textContent = `${local.currentPercent}%`;
+    local.dupeLevel = Math.max(0, local.dupeLevel - 1);
+    pctValue.textContent = `${DUPE_LEVELS[local.dupeLevel]}%`;
     refreshHint();
     scheduleSave();
   });

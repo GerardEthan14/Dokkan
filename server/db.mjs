@@ -29,7 +29,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS collection (
     card_id TEXT PRIMARY KEY REFERENCES cards(id) ON DELETE CASCADE,
     owned INTEGER NOT NULL DEFAULT 0,
-    current_percent INTEGER NOT NULL DEFAULT 0,
+    dupe_level INTEGER NOT NULL DEFAULT 0,
     dupes_in_stock INTEGER NOT NULL DEFAULT 0,
     dokkan_awakened INTEGER NOT NULL DEFAULT 0,
     notes TEXT,
