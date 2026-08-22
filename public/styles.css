@@ -333,6 +333,43 @@ body {
   color: var(--text-dim);
 }
 
+.stage-selector-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin: 0 0 0.4rem;
+}
+
+.stage-selector {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.stage-pill {
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-style: italic;
+  cursor: pointer;
+  color: #1a1305;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  opacity: 0.55;
+}
+.stage-pill.active {
+  opacity: 1;
+  border-color: var(--text);
+}
+.stage-pill.rarity-LR { background: var(--rarity-LR); }
+.stage-pill.rarity-UR { background: var(--rarity-UR); }
+.stage-pill.rarity-SSR { background: var(--rarity-SSR); color: #fff; }
+.stage-pill.rarity-SR { background: var(--rarity-SR); color: #fff; }
+.stage-pill.rarity-R { background: var(--rarity-R); color: #fff; }
+.stage-pill.rarity-N { background: var(--rarity-N); color: #fff; }
+.stage-pill.rarity-TUR { background: linear-gradient(135deg, #fff6d0, #ffd76a, #fff6d0); color: #6b4e00; }
+
 .field-row {
   display: flex;
   align-items: center;

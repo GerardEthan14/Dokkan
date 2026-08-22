@@ -93,6 +93,18 @@ function renderTile(card) {
 
 function openModal(card) {
   modalOverlay.classList.remove('hidden');
+  const stages = card.stages || [];
+  const stageSelector =
+    stages.length > 1
+      ? `<div class="stage-selector">
+          ${stages
+            .map(
+              (s) => `<button type="button" class="stage-pill rarity-${s.rarity || 'N'} ${s.id === card.id ? 'active' : ''}" data-stage-id="${s.id}">${s.rarity || '?'}</button>`,
+            )
+            .join('')}
+        </div>`
+      : '';
+
   modalContent.innerHTML = `
     <img class="modal-image" src="${card.imageUrl}" alt="${card.name}"
          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%22220%22><rect width=%22220%22 height=%22220%22 fill=%22%23131a2b%22/></svg>'" />
@@ -103,6 +115,7 @@ function openModal(card) {
       <span>${card.type || '?'}</span>
       <span>${card.class || '?'}</span>
     </div>
+    ${stageSelector ? `<p class="stage-selector-label">Stade actuel</p>${stageSelector}` : ''}
 
     <div class="field-row">
       <label for="f-owned">Carte possédée</label>
@@ -147,6 +160,7 @@ function openModal(card) {
     dupeLevel: card.dupeLevel,
     dupesInStock: card.dupesInStock,
     dokkanAwakened: card.dokkanAwakened,
+    currentCardId: card.id,
   };
 
   const pctValue = modalContent.querySelector('#pct-value');
@@ -170,21 +184,32 @@ function openModal(card) {
     saveTimer = setTimeout(save, 250);
   }
 
-  async function save() {
-    const res = await fetch(`/api/collection/${card.id}`, {
+  async function save({ reopen } = {}) {
+    const res = await fetch(`/api/collection/${card.lineageKey}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(local),
     });
     const updated = await res.json();
     Object.assign(card, updated);
+    loadStats();
+    if (reopen) {
+      openModal(card);
+      return;
+    }
     const indicator = modalContent.querySelector('#saveIndicator');
     if (indicator) {
       indicator.classList.add('visible');
       setTimeout(() => indicator.classList.remove('visible'), 900);
     }
-    loadStats();
   }
+
+  modalContent.querySelectorAll('.stage-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      local.currentCardId = pill.dataset.stageId;
+      save({ reopen: true });
+    });
+  });
 
   modalContent.querySelector('#f-owned').addEventListener('change', (e) => {
     local.owned = e.target.checked;

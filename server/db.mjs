@@ -9,9 +9,15 @@ fs.mkdirSync(dataDir, { recursive: true });
 
 export const db = new DatabaseSync(path.join(dataDir, 'dokkan.sqlite3'));
 
+// Une "lignée" regroupe les différentes formes d'un même personnage au fil
+// de ses éveils (ex: SSR -> UR -> LR). Chaque forme reste une ligne distincte
+// dans `cards` (image/rareté/type propres), mais la progression de
+// collection (`collection`) est suivie une seule fois par lignée : c'est le
+// joueur qui indique, via `current_card_id`, à quel stade il se trouve.
 db.exec(`
   CREATE TABLE IF NOT EXISTS cards (
     id TEXT PRIMARY KEY,
+    lineage_key TEXT NOT NULL,
     name TEXT NOT NULL,
     title TEXT,
     rarity TEXT,
@@ -27,7 +33,8 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS collection (
-    card_id TEXT PRIMARY KEY REFERENCES cards(id) ON DELETE CASCADE,
+    lineage_key TEXT PRIMARY KEY,
+    current_card_id TEXT REFERENCES cards(id) ON DELETE SET NULL,
     owned INTEGER NOT NULL DEFAULT 0,
     dupe_level INTEGER NOT NULL DEFAULT 0,
     dupes_in_stock INTEGER NOT NULL DEFAULT 0,
@@ -39,4 +46,5 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_cards_rarity ON cards(rarity);
   CREATE INDEX IF NOT EXISTS idx_cards_type ON cards(type);
   CREATE INDEX IF NOT EXISTS idx_cards_class ON cards(class);
+  CREATE INDEX IF NOT EXISTS idx_cards_lineage ON cards(lineage_key);
 `);

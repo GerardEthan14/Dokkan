@@ -19,8 +19,8 @@ async function main() {
   console.log(`${characters.length} cartes reçues, import en base...`);
 
   const upsert = db.prepare(`
-    INSERT INTO cards (id, name, title, rarity, class, type, cost, categories, links, image_url, leader_skill, passive, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO cards (id, lineage_key, name, title, rarity, class, type, cost, categories, links, image_url, leader_skill, passive, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(id) DO UPDATE SET
       name=excluded.name,
       title=excluded.title,
@@ -36,20 +36,24 @@ async function main() {
       updated_at=datetime('now')
   `);
 
+  // Cette source ne relie pas les différentes formes d'un même personnage :
+  // chaque carte est sa propre lignée (à l'inverse de import-cards-dokkaninfo.mjs).
   const ensureCollectionRow = db.prepare(`
-    INSERT OR IGNORE INTO collection (card_id) VALUES (?)
+    INSERT OR IGNORE INTO collection (lineage_key, current_card_id) VALUES (?, ?)
   `);
 
   let imported = 0;
   const seen = new Set();
-  const runAll = db.exec ? null : null; // no-op, node:sqlite has no transaction helper here
   db.exec('BEGIN');
   try {
     for (const c of characters) {
       if (!c.id || seen.has(c.id)) continue; // ignore les doublons d'id de la source
       seen.add(c.id);
+      const id = String(c.id);
+      const lineageKey = id;
       upsert.run(
-        String(c.id),
+        id,
+        lineageKey,
         c.name ?? 'Carte inconnue',
         c.title ?? null,
         c.rarity ?? null,
@@ -62,7 +66,7 @@ async function main() {
         c.leaderSkill ?? null,
         c.passive ?? null,
       );
-      ensureCollectionRow.run(String(c.id));
+      ensureCollectionRow.run(lineageKey, id);
       imported++;
     }
     db.exec('COMMIT');

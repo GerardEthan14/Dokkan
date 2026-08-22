@@ -170,28 +170,21 @@ async function main() {
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
   // Dokkan Awaken -> TUR après une évolution supplémentaire). Le jeu leur
   // attribue des identifiants consécutifs pour la même lignée (ex: 1000010,
-  // 1000011, 1000012...), donc on regroupe par dizaine d'id et on ne garde
-  // que la forme la plus aboutie (id le plus élevé du groupe) : c'est celle-là
-  // qui compte pour la collection, le statut "Dokkan Awaken" étant de toute
-  // façon suivi séparément via la case à cocher.
-  const lineages = new Map();
-  for (const card of playableCards) {
-    if (!card.id || !card.name) continue;
-    const lineageKey = Math.floor(card.id / 10);
-    const current = lineages.get(lineageKey);
-    if (!current || card.id > current.id) lineages.set(lineageKey, card);
-  }
-  const groupedCards = [...lineages.values()];
-  console.log(`${groupedCards.length} cartes après regroupement par lignée (forme la plus aboutie gardée).`);
+  // 1000011, 1000012...). Plutôt que de ne garder que la forme la plus
+  // aboutie, on les garde TOUTES en base (une lignée = plusieurs lignes dans
+  // `cards`, un seul suivi de collection dans `collection`) : c'est le
+  // joueur qui choisit dans l'interface à quel stade il se trouve.
+  const validCards = playableCards.filter((c) => c.id && c.name);
 
   console.log('Vérification que chaque image existe vraiment (peut prendre plusieurs minutes)...');
-  const cards = await filterCardsWithRealImage(groupedCards);
-  console.log(`${groupedCards.length - cards.length} cartes retirées car leur image n'existe pas réellement.`);
+  const cards = await filterCardsWithRealImage(validCards);
+  console.log(`${validCards.length - cards.length} cartes retirées car leur image n'existe pas réellement.`);
 
   const upsert = db.prepare(`
-    INSERT INTO cards (id, name, rarity, class, type, image_url, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO cards (id, lineage_key, name, rarity, class, type, image_url, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(id) DO UPDATE SET
+      lineage_key=excluded.lineage_key,
       name=excluded.name,
       rarity=excluded.rarity,
       class=excluded.class,
@@ -199,18 +192,27 @@ async function main() {
       image_url=excluded.image_url,
       updated_at=datetime('now')
   `);
-  const ensureCollectionRow = db.prepare(`INSERT OR IGNORE INTO collection (card_id) VALUES (?)`);
+  const ensureCollectionRow = db.prepare(`
+    INSERT OR IGNORE INTO collection (lineage_key, current_card_id) VALUES (?, ?)
+  `);
 
   const rarityCounts = {};
   let imported = 0;
   const keptIds = new Set(cards.map((c) => `dki-${c.id}`));
+  // Le stade par défaut proposé pour chaque lignée est le plus abouti connu
+  // (id le plus élevé du groupe) ; le joueur pourra le changer librement.
+  const defaultStageByLineage = new Map();
+  for (const card of cards) {
+    const lineageKey = `dki-lineage-${Math.floor(card.id / 10)}`;
+    const current = defaultStageByLineage.get(lineageKey);
+    if (!current || card.id > current.id) defaultStageByLineage.set(lineageKey, card);
+  }
 
   db.exec('BEGIN');
   try {
     // Un précédent import a pu laisser des cartes qui ne font plus partie du
-    // jeu de données actuel (ex: anciennes formes SSR/UR d'une lignée
-    // maintenant regroupée sous sa forme TUR) : on les retire, sinon elles
-    // restent affichées en double indéfiniment.
+    // jeu de données actuel : on les retire, sinon elles restent affichées
+    // indéfiniment.
     const staleRows = db.prepare(`SELECT id FROM cards WHERE id LIKE 'dki-%'`).all();
     const deleteStale = db.prepare('DELETE FROM cards WHERE id = ?');
     let removedStale = 0;
@@ -220,28 +222,37 @@ async function main() {
         removedStale++;
       }
     }
-    if (removedStale > 0) {
-      console.log(`${removedStale} cartes obsolètes retirées (progression associée perdue pour celles-ci).`);
-    }
+    if (removedStale > 0) console.log(`${removedStale} cartes obsolètes retirées.`);
+
     for (const card of cards) {
-      if (!card.id || !card.name) continue;
       const { type, class: cardClass } = decodeElement(card.element);
       const rarity = RARITY_MAP[card.rarity] ?? String(card.rarity ?? '?');
       const imageUrl = buildImageUrl(card);
-
       const id = `dki-${card.id}`;
-      upsert.run(id, card.name, rarity, cardClass, type, imageUrl);
-      ensureCollectionRow.run(id);
+      const lineageKey = `dki-lineage-${Math.floor(card.id / 10)}`;
+
+      upsert.run(id, lineageKey, card.name, rarity, cardClass, type, imageUrl);
+      const defaultStage = defaultStageByLineage.get(lineageKey);
+      ensureCollectionRow.run(lineageKey, `dki-${defaultStage.id}`);
       rarityCounts[rarity] = (rarityCounts[rarity] ?? 0) + 1;
       imported++;
     }
+
+    // Nettoie les lignées de collection dont plus aucune carte n'existe.
+    db.exec(`
+      DELETE FROM collection
+      WHERE lineage_key LIKE 'dki-lineage-%'
+        AND NOT EXISTS (SELECT 1 FROM cards WHERE cards.lineage_key = collection.lineage_key)
+    `);
+
     db.exec('COMMIT');
   } catch (err) {
     db.exec('ROLLBACK');
     throw err;
   }
 
-  console.log(`\nImport terminé : ${imported} cartes importées.`);
+  const lineageCount = new Set(cards.map((c) => Math.floor(c.id / 10))).size;
+  console.log(`\nImport terminé : ${imported} cartes importées, regroupées en ${lineageCount} lignées/personnages.`);
   console.log('Répartition par rareté :', rarityCounts);
   console.log(
     "\nNe lance pas aussi `npm run import-cards` (source LR/UR séparée) après ceci : les identifiants" +
