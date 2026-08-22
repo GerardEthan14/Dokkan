@@ -109,9 +109,26 @@ function main() {
   const rarityCounts = {};
   let imported = 0;
   let missingImage = 0;
+  const keptIds = new Set(cards.map((c) => `dki-${c.id}`));
 
   db.exec('BEGIN');
   try {
+    // Un précédent import a pu laisser des cartes qui ne font plus partie du
+    // jeu de données actuel (ex: anciennes formes SSR/UR d'une lignée
+    // maintenant regroupée sous sa forme TUR) : on les retire, sinon elles
+    // restent affichées en double indéfiniment.
+    const staleRows = db.prepare(`SELECT id FROM cards WHERE id LIKE 'dki-%'`).all();
+    const deleteStale = db.prepare('DELETE FROM cards WHERE id = ?');
+    let removedStale = 0;
+    for (const row of staleRows) {
+      if (!keptIds.has(row.id)) {
+        deleteStale.run(row.id);
+        removedStale++;
+      }
+    }
+    if (removedStale > 0) {
+      console.log(`${removedStale} cartes obsolètes retirées (progression associée perdue pour celles-ci).`);
+    }
     for (const card of cards) {
       if (!card.id || !card.name) continue;
       const { type, class: cardClass } = decodeElement(card.element);
