@@ -235,6 +235,9 @@ async function main() {
     }
     if (removedStale > 0) console.log(`${removedStale} cartes obsolètes retirées.`);
 
+    // Passe 1 : insérer toutes les cartes d'abord, pour que la clé étrangère
+    // current_card_id (passe 2) puisse toujours pointer vers une ligne qui
+    // existe déjà, quel que soit l'ordre de traitement des lignées.
     for (const card of cards) {
       const { type, class: cardClass } = decodeElement(card.element);
       const rarity = RARITY_MAP[card.rarity] ?? String(card.rarity ?? '?');
@@ -243,10 +246,14 @@ async function main() {
       const lineageKey = lineageKeyFor(card.id);
 
       upsert.run(id, lineageKey, card.name, rarity, cardClass, type, imageUrl);
-      const defaultStage = defaultStageByLineage.get(lineageKey);
-      ensureCollectionRow.run(lineageKey, `dki-${defaultStage.id}`);
       rarityCounts[rarity] = (rarityCounts[rarity] ?? 0) + 1;
       imported++;
+    }
+
+    // Passe 2 : une ligne de collection par lignée, une fois toutes les
+    // cartes en place.
+    for (const [lineageKey, defaultStage] of defaultStageByLineage) {
+      ensureCollectionRow.run(lineageKey, `dki-${defaultStage.id}`);
     }
 
     // Nettoie les lignées de collection dont plus aucune carte n'existe.
