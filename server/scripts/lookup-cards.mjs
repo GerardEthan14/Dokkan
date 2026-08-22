@@ -33,8 +33,10 @@ if (!match) {
 }
 const cards = JSON.parse(decodeEntities(match[1]));
 
-const q = searchTerm.toLowerCase();
-const results = cards.filter((c) => c.name && c.name.toLowerCase().includes(q));
+const isNumeric = /^\d+$/.test(searchTerm);
+const results = isNumeric
+  ? cards.filter((c) => String(c.id) === searchTerm)
+  : cards.filter((c) => c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
 console.log(`${results.length} résultat(s) pour "${searchTerm}" :\n`);
 for (const c of results) {
@@ -48,6 +50,10 @@ for (const c of results) {
         bg_element: c.bg_element,
         icon_id: c.icon_id,
         resource_id: c.resource_id,
+        open_at: c.open_at,
+        eza: c.eza,
+        seza: c.seza,
+        awoken_max: c.awoken_max,
       },
       null,
       2,
