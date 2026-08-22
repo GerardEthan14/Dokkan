@@ -150,6 +150,8 @@ async function main() {
   // les mêmes stats et le même open_at que l'originale, mais un id
   // commençant par "4" (confirmé sur 3 cas : forme géante, fusion, et
   // changement d'ordre d'affichage). On l'exclut directement par ce préfixe.
+  // Ne garde que UR/LR/TUR (rarity >= 4) : sur demande, N/R/SR/SSR sont
+  // exclus de la collection à suivre.
   const playableCards = allCards.filter(
     (c) =>
       c.avg_max !== 500 &&
@@ -158,10 +160,11 @@ async function main() {
       (c.atk_hipo ?? 0) < 25000 &&
       !(c.optimal_awakening_grow_type != null && c.optimal_awakening_step == null) &&
       !String(c.id).startsWith('4') &&
-      (c.resource_id != null || c.icon_id != null),
+      (c.resource_id != null || c.icon_id != null) &&
+      (c.rarity ?? 0) >= 4,
   );
   console.log(
-    `${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion/forme dérivée/sans image retirées.`,
+    `${allCards.length - playableCards.length} cartes retirées (boss/ennemi/forme géante/fusion/forme dérivée/sans image/rareté N-R-SR-SSR).`,
   );
 
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après

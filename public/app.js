@@ -36,6 +36,10 @@ async function loadStats() {
     <span><b>${s.notMaxedWithStock}</b> avec doublons non utilisés</span>
     <span><b>${s.notAwakened}</b> non Dokkan Awaken</span>
   `;
+
+  const percent = s.total > 0 ? Math.round((s.owned / s.total) * 1000) / 10 : 0;
+  document.getElementById('completionBarFill').style.width = `${percent}%`;
+  document.getElementById('completionBarLabel').textContent = `${percent}%`;
 }
 
 async function loadCards() {
@@ -65,7 +69,7 @@ function renderGrid() {
 
 function renderTile(card) {
   const tile = document.createElement('div');
-  tile.className = `card-tile rarity-${card.rarity || 'N'} ${card.owned ? '' : 'not-owned'}`;
+  tile.className = `card-tile type-${card.type || ''} ${card.owned ? '' : 'not-owned'}`;
   tile.title = `${card.name} - ${card.title || ''}`;
 
   const flags = [];
@@ -77,6 +81,7 @@ function renderTile(card) {
       <img src="${card.imageUrl}" alt="${card.name}" loading="lazy"
            onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%23131a2b%22/></svg>'" />
       <div class="type-badge type-${card.type || ''}">${card.type ? card.type[0] : '?'}</div>
+      <div class="rarity-badge rarity-${card.rarity || 'N'}">${card.rarity || '?'}</div>
       <div class="flag-icons">${flags.join('')}</div>
       ${card.owned ? `<div class="percent-badge ${card.currentPercent >= 100 ? 'maxed' : ''}">${card.currentPercent}%</div>` : ''}
     </div>

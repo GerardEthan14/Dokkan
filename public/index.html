@@ -12,17 +12,21 @@
     <div id="stats" class="stats"></div>
   </header>
 
+  <div class="completion-bar-wrap">
+    <div class="completion-bar-track">
+      <div id="completionBarFill" class="completion-bar-fill" style="width: 0%"></div>
+    </div>
+    <div id="completionBarLabel" class="completion-bar-label">0%</div>
+  </div>
+
   <div class="toolbar">
     <input id="search" type="search" placeholder="Rechercher un nom, un titre, une catégorie..." />
 
     <select id="filterRarity">
       <option value="">Toute rareté</option>
       <option value="LR">LR</option>
+      <option value="TUR">TUR</option>
       <option value="UR">UR</option>
-      <option value="SSR">SSR</option>
-      <option value="SR">SR</option>
-      <option value="R">R</option>
-      <option value="N">N</option>
     </select>
 
     <select id="filterType">

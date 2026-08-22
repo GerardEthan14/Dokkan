@@ -60,6 +60,34 @@ body {
 
 .stats b { color: var(--text); }
 
+.completion-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0 1.25rem 0.75rem;
+}
+.completion-bar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid #2a3450;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.completion-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4fa8e8, #47d18c, var(--accent));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.completion-bar-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
 .toolbar {
   display: flex;
   gap: 0.6rem;
@@ -125,12 +153,11 @@ body {
   background: var(--bg-elevated);
 }
 
-.card-tile.rarity-LR { background: var(--rarity-LR); }
-.card-tile.rarity-UR { background: var(--rarity-UR); }
-.card-tile.rarity-SSR { background: var(--rarity-SSR); }
-.card-tile.rarity-SR { background: var(--rarity-SR); }
-.card-tile.rarity-R { background: var(--rarity-R); }
-.card-tile.rarity-N { background: var(--rarity-N); }
+.card-tile.type-AGL { background: var(--type-AGL); }
+.card-tile.type-TEQ { background: var(--type-TEQ); }
+.card-tile.type-INT { background: var(--type-INT); }
+.card-tile.type-STR { background: var(--type-STR); }
+.card-tile.type-PHY { background: var(--type-PHY); }
 
 .card-tile .inner {
   position: relative;
@@ -180,6 +207,35 @@ body {
 .type-INT { background: var(--type-INT); }
 .type-STR { background: var(--type-STR); }
 .type-PHY { background: var(--type-PHY); }
+
+.rarity-badge {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  min-width: 22px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: #1a1305;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  border: 1px solid rgba(0,0,0,0.4);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  z-index: 2;
+}
+.rarity-badge.rarity-LR { background: var(--rarity-LR); color: #1a1305; }
+.rarity-badge.rarity-UR { background: var(--rarity-UR); }
+.rarity-badge.rarity-SSR { background: var(--rarity-SSR); color: #fff; }
+.rarity-badge.rarity-SR { background: var(--rarity-SR); color: #fff; }
+.rarity-badge.rarity-R { background: var(--rarity-R); color: #fff; }
+.rarity-badge.rarity-N { background: var(--rarity-N); color: #fff; }
+.rarity-badge.rarity-TUR { background: linear-gradient(135deg, #fff6d0, #ffd76a, #fff6d0); color: #6b4e00; }
 
 .percent-badge {
   position: absolute;
