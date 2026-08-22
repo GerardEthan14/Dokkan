@@ -19,10 +19,35 @@ const outPath = path.join(__dirname, '..', '..', 'data', 'page-inspection.json')
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
 console.log(`Lecture de ${inputPath}...`);
-const data = fs.readFileSync(inputPath, 'utf8');
+const buffer = fs.readFileSync(inputPath);
+
+// Détection d'encodage (un fichier "enregistré sous" depuis un navigateur
+// Windows peut être en UTF-16 avec BOM, ce qui casse la recherche de texte
+// si on le lit comme de l'UTF-8 brut : tout matcherait 0 résultat).
+let encoding = 'utf8';
+let byteOffset = 0;
+if (buffer[0] === 0xff && buffer[1] === 0xfe) {
+  encoding = 'utf16le';
+  byteOffset = 2;
+} else if (buffer[0] === 0xfe && buffer[1] === 0xff) {
+  encoding = 'utf16be (non supporté nativement, converti approximativement)';
+  byteOffset = 2;
+} else if (buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
+  encoding = 'utf8 avec BOM';
+  byteOffset = 3;
+}
+
+const data = buffer.toString(encoding.startsWith('utf16') ? 'utf16le' : 'utf8', byteOffset);
+console.log(`Encodage détecté : ${encoding}`);
 console.log(`Fichier lu : ${(data.length / 1024 / 1024).toFixed(1)} Mo, ${data.length} caractères.`);
 
-const report = { fileSizeChars: data.length };
+const report = {
+  fileSizeChars: data.length,
+  detectedEncoding: encoding,
+  firstBytesHex: buffer.subarray(0, 32).toString('hex'),
+  first500Chars: data.slice(0, 500),
+  middle500Chars: data.slice(Math.floor(data.length / 2), Math.floor(data.length / 2) + 500),
+};
 
 // 1. Marqueurs de frameworks / données embarquées connus
 const markers = ['__NEXT_DATA__', '__NUXT__', 'window.__', 'application/json', '__INITIAL_STATE__'];
