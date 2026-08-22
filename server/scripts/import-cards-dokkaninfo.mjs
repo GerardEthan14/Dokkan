@@ -90,11 +90,12 @@ function main() {
   // Z-Battle), donc le premier chiffre de l'id seul n'est pas fiable : on se
   // base uniquement sur cette stat à 500.
   // Les formes géantes (transformation en combat, pas une vraie carte) ont
-  // un ATK anormalement élevé. Seuil provisoire relevé à 30000 : un vrai
-  // LR EZA (Super Saiyan 4 Goku & Vegeta, id 1022421) atteint déjà 22185,
-  // donc 20000 excluait à tort de vraies cartes. À remplacer par le même
-  // signal grow_type/step que les fusions dès qu'on aura confirmé qu'il
-  // s'applique aussi aux formes géantes.
+  // un ATK anormalement élevé (confirmé jusqu'à 60000 sur "Giant Gomah").
+  // Seuil à 25000 : au-dessus du plus fort vrai LR EZA connu (22185, Super
+  // Saiyan 4 Goku & Vegeta id 1022421), en dessous des formes géantes
+  // connues (>= 20000, généralement bien plus). Le signal grow_type/step
+  // utilisé pour les fusions ne s'applique pas ici : une vraie forme géante
+  // (Giant Gomah) a aussi ces deux champs vides.
   //
   // Les fusions en combat (ex: Gogeta obtenu en fusionnant Goku & Vegeta)
   // ont exactement les MÊMES stats que la vraie carte (donc le filtre ATK ne
@@ -109,8 +110,8 @@ function main() {
     (c) =>
       c.avg_max !== 500 &&
       c.avg_hipo !== 500 &&
-      (c.atk_max ?? 0) < 30000 &&
-      (c.atk_hipo ?? 0) < 30000 &&
+      (c.atk_max ?? 0) < 25000 &&
+      (c.atk_hipo ?? 0) < 25000 &&
       !(c.optimal_awakening_grow_type != null && c.optimal_awakening_step == null),
   );
   console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion retirées.`);
