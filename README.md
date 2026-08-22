@@ -21,17 +21,27 @@ Ouvre ensuite http://localhost:3000 dans ton navigateur.
 
 ## Comment ça marche
 
-- **Base de cartes** : importée automatiquement depuis une base communautaire publique
-  (données du Dokkan Battle Wiki, via le projet `MNprojects/DokkanAPI`). Elle couvre
-  pour l'instant ~800 cartes **LR et UR**. Tu peux relancer `npm run import-cards` à
-  tout moment pour mettre à jour les infos des cartes (nom, image...) : ta progression
-  (possédé, %, doublons, Dokkan Awaken) n'est jamais effacée par cet import.
-- **`npm run import-cards-full`** (optionnel, expérimental) : tente d'importer en plus
-  toutes les autres raretés (N/R/SR/SSR) depuis le wiki Fandom Dokkan Battle. Ce script
-  n'a pas pu être testé en conditions réelles pendant le développement (environnement
-  sans accès à ce site) : lance-le, et s'il échoue ou si le résultat semble faux/incomplet,
-  envoie-moi le contenu de `data/fandom-diagnostic.json` qu'il génère, pour qu'on corrige
-  ensemble le mapping des champs.
+- **Base de cartes (rapide, LR/UR uniquement)** : `npm run import-cards` télécharge
+  automatiquement ~800 cartes LR/UR depuis une base communautaire publique sur GitHub.
+  Zéro manipulation, mais incomplet.
+- **Base de cartes complète (recommandé)** : `npm run import-cards-dokkaninfo` importe
+  la base entière (~13 000 cartes, toutes raretés N/R/SR/SSR/UR/LR) depuis
+  [dokkaninfo.com](https://dokkaninfo.com), la référence la plus complète. Ce site
+  bloque les requêtes automatisées (protection anti-robot), donc il faut d'abord
+  récupérer les données à la main dans ton navigateur (une seule fois, ou à chaque
+  fois que tu veux les mettre à jour) :
+
+  1. Va sur https://dokkaninfo.com/cards, attends que la page charge complètement
+  2. Fais **Ctrl+U** (afficher le code source de la page)
+  3. Dans cet onglet, **Ctrl+S** pour l'enregistrer (n'importe quel nom, .txt ou .html)
+  4. `node server/scripts/inspect-local-page.mjs "chemin/vers/le/fichier"` — reconstruit
+     le vrai code source dans `data/dokkaninfo-cards-source.html`
+  5. `npm run import-cards-dokkaninfo` — importe toutes les cartes dans ta base
+
+  ⚠️ Ne lance pas les deux méthodes d'import l'une après l'autre : elles utilisent des
+  identifiants différents et tu te retrouverais avec des cartes en double. Choisis-en
+  une (la complète, idéalement).
+
 - **Ta progression** est stockée dans un fichier local `data/dokkan.sqlite3` (créé
   automatiquement, ignoré par git) : rien n'est envoyé sur internet, tout reste sur
   ta machine (ou sur ton volume persistant si tu déploies en ligne, voir plus bas).
@@ -86,9 +96,10 @@ chez toi.
 
 ## Limites connues
 
-- La base "principale" (`import-cards`) ne couvre que LR/UR (~800 cartes) ; l'import
-  élargi (`import-cards-full`) est expérimental et n'a pas pu être validé avant livraison.
 - Les % suivent le barème standard (55/69/79/89/100). Si une carte précise affiche un
   barème différent chez toi, dis-le-moi pour qu'on adapte.
 - Certaines images (hébergées sur des CDN externes) peuvent occasionnellement être
   indisponibles ; un cadre vide s'affiche alors à la place de l'icône.
+- L'import complet (`import-cards-dokkaninfo`) n'a pas de bouton "mettre à jour en un
+  clic" à cause du blocage anti-robot du site source : il faut refaire la procédure
+  manuelle (Ctrl+U, Ctrl+S) à chaque fois que tu veux rafraîchir la base.
