@@ -89,8 +89,12 @@ function main() {
   // pourtant de vraies cartes invocables (ex: anciens boss d'Extreme
   // Z-Battle), donc le premier chiffre de l'id seul n'est pas fiable : on se
   // base uniquement sur cette stat à 500.
-  const playableCards = allCards.filter((c) => c.avg_max !== 500 && c.avg_hipo !== 500);
-  console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi retirées.`);
+  // Les formes géantes (transformation en combat, pas une vraie carte) ont
+  // un ATK anormalement élevé (>= 20000) par rapport à une carte normale.
+  const playableCards = allCards.filter(
+    (c) => c.avg_max !== 500 && c.avg_hipo !== 500 && (c.atk_max ?? 0) < 20000 && (c.atk_hipo ?? 0) < 20000,
+  );
+  console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante retirées.`);
 
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
   // Dokkan Awaken -> TUR après une évolution supplémentaire). Le jeu leur
