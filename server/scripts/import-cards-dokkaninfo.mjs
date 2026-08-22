@@ -106,15 +106,24 @@ function main() {
   // une étape d'éveil franchissable. Une vraie carte de base (jamais encore
   // éveillée) a les deux champs vides, donc ce n'est que la combinaison
   // "grow_type rempli + step vide" qui signale une forme dérivée.
+  //
+  // Enfin, les changements d'affichage en combat (ex: une carte à 2
+  // personnages où l'ordre affiché change) créent une deuxième entrée avec
+  // les mêmes stats et le même open_at que l'originale, mais un id
+  // commençant par "4" (confirmé sur 3 cas : forme géante, fusion, et
+  // changement d'ordre d'affichage). On l'exclut directement par ce préfixe.
   const playableCards = allCards.filter(
     (c) =>
       c.avg_max !== 500 &&
       c.avg_hipo !== 500 &&
       (c.atk_max ?? 0) < 25000 &&
       (c.atk_hipo ?? 0) < 25000 &&
-      !(c.optimal_awakening_grow_type != null && c.optimal_awakening_step == null),
+      !(c.optimal_awakening_grow_type != null && c.optimal_awakening_step == null) &&
+      !String(c.id).startsWith('4'),
   );
-  console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion retirées.`);
+  console.log(
+    `${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion/forme dérivée retirées.`,
+  );
 
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
   // Dokkan Awaken -> TUR après une évolution supplémentaire). Le jeu leur
