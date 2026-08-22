@@ -22,7 +22,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultInput = path.join(__dirname, '..', '..', 'data', 'dokkaninfo-cards-source.html');
 const inputPath = process.argv[2] || defaultInput;
 
-const RARITY_MAP = ['N', 'R', 'SR', 'SSR', 'UR', 'LR'];
+// 6=TUR (Transcended Ultra Rare) est une supposition : pas encore vérifiée
+// sur un cas connu, à confirmer si des cartes affichent cette rareté.
+const RARITY_MAP = ['N', 'R', 'SR', 'SSR', 'UR', 'LR', 'TUR'];
 const TYPE_MAP = ['AGL', 'TEQ', 'INT', 'STR', 'PHY'];
 const CLASS_MAP = ['Super', 'Extreme'];
 
@@ -71,8 +73,25 @@ function main() {
 
   console.log('Décodage du JSON...');
   const decoded = decodeEntities(match[1]);
-  const cards = JSON.parse(decoded);
-  console.log(`${cards.length} cartes trouvées.`);
+  const allCards = JSON.parse(decoded);
+  console.log(`${allCards.length} cartes trouvées.`);
+
+  // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
+  // Dokkan Awaken -> TUR après une évolution supplémentaire). Le jeu leur
+  // attribue des identifiants consécutifs pour la même lignée (ex: 1000010,
+  // 1000011, 1000012...), donc on regroupe par dizaine d'id et on ne garde
+  // que la forme la plus aboutie (id le plus élevé du groupe) : c'est celle-là
+  // qui compte pour la collection, le statut "Dokkan Awaken" étant de toute
+  // façon suivi séparément via la case à cocher.
+  const lineages = new Map();
+  for (const card of allCards) {
+    if (!card.id || !card.name) continue;
+    const lineageKey = Math.floor(card.id / 10);
+    const current = lineages.get(lineageKey);
+    if (!current || card.id > current.id) lineages.set(lineageKey, card);
+  }
+  const cards = [...lineages.values()];
+  console.log(`${cards.length} cartes après regroupement par lignée (forme la plus aboutie gardée).`);
 
   const upsert = db.prepare(`
     INSERT INTO cards (id, name, rarity, class, type, image_url, updated_at)
