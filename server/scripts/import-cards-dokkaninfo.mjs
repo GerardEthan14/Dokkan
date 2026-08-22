@@ -55,18 +55,20 @@ function decodeElement(element) {
   };
 }
 
-// Fenêtre de regroupement des lignées : les formes d'un même "cycle" de
-// sortie ont des id qui se suivent de 1 en 1 (SSR -> UR, Dokkan Awaken) ou
-// de 10 en 10 (UR -> LR, ré-sortie plus aboutie plus tard) — diviser par 100
-// regroupe les deux cas. MAIS la plage d'id seule ne suffit pas : des
-// personnages complètement différents (ex: Vegeta SSJ4, Krillin, Majin Kuu)
-// peuvent tomber dans la même fourchette par coïncidence. On exige donc EN
-// PLUS que le nom soit rigoureusement identique avant de regrouper deux
-// cartes. Un très ancien personnage réédité bien plus tard avec un tout
-// autre bloc d'id (écart de plusieurs centaines/milliers) ne sera pas
-// relié : élargir encore la fenêtre serait trop risqué.
+// Fenêtre de regroupement des lignées : on ne relie que des id qui se
+// suivent de 1 en 1 (SSR -> UR après Dokkan Awaken, même cycle de sortie).
+// Un écart plus large (10, 20...) a été essayé mais s'est révélé dangereux :
+// il regroupait à tort des personnages totalement différents (Vegeta SSJ4,
+// Krillin, Majin Kuu tombés dans la même fourchette), et même exiger un nom
+// identique en plus ne suffit pas (un même personnage peut avoir plusieurs
+// EZA/branches distinctes sous le même nom, ex: 3 EZA différentes de "Super
+// Saiyan God SS Goku", dont une avec un type différent). Écart de 1 = motif
+// confirmé de façon fiable sur tous les cas observés. Conséquence acceptée :
+// certaines lignées avec un plus grand écart entre générations (ex: Gomah,
+// dont la forme UR et LR sont espacées de 10) réapparaissent en cartes
+// séparées plutôt qu'une seule case avec sélecteur.
 function lineageKeyFor(id, name) {
-  return `dki-lineage-${Math.floor(id / 100)}::${name}`;
+  return `dki-lineage-${Math.floor(id / 10)}::${name}`;
 }
 
 function buildImageUrl(card) {
