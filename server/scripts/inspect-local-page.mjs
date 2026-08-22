@@ -50,7 +50,13 @@ if (data.includes('id="viewsource"') || data.includes("id='viewsource'")) {
   console.log('Page "voir le code source" détectée, désenveloppement en cours...');
   const bodyMatch = data.match(/<body[^>]*id=["']viewsource["'][^>]*>([\s\S]*)<\/body>/);
   let inner = bodyMatch ? bodyMatch[1] : data;
-  inner = inner.replace(/<\/?span[^>]*>/g, '');
+  // Tout ce qui est <span ...> ou <a ...> à l'intérieur de cette page est une
+  // décoration ajoutée par Firefox pour la coloration syntaxique (y compris
+  // les valeurs d'attributs, encapsulées dans <a class="attribute-value">) :
+  // les vraies balises de la page d'origine, elles, apparaissent ici comme du
+  // texte échappé (&lt;a href=...&gt;), pas comme de vraies balises. On peut
+  // donc retirer <span> et <a> sans risque.
+  inner = inner.replace(/<\/?(?:span|a)(?:\s[^>]*)?>/g, '');
   inner = inner
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
