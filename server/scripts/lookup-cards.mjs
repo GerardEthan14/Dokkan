@@ -40,23 +40,5 @@ const results = isNumeric
 
 console.log(`${results.length} résultat(s) pour "${searchTerm}" :\n`);
 for (const c of results) {
-  console.log(
-    JSON.stringify(
-      {
-        id: c.id,
-        name: c.name,
-        rarity: c.rarity,
-        element: c.element,
-        bg_element: c.bg_element,
-        icon_id: c.icon_id,
-        resource_id: c.resource_id,
-        open_at: c.open_at,
-        eza: c.eza,
-        seza: c.seza,
-        awoken_max: c.awoken_max,
-      },
-      null,
-      2,
-    ),
-  );
+  console.log(JSON.stringify(c, null, 2));
 }
