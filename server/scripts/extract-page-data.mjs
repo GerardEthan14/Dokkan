@@ -93,6 +93,20 @@ if (found.length > 0) {
   }
   scripts.sort((a, b) => b.length - a.length);
   report.biggestScripts = scripts.slice(0, 5);
+
+  // On sait (grâce à une inspection précédente) que des champs comme
+  // "resource_id" ou "skill_lv_max" existent bien quelque part dans le
+  // fichier : on cherche directement leur contexte pour voir où ils sont
+  // réellement logés (script, attribut non deviné, JSON brut...).
+  console.log('Recherche de mots-clés connus (resource_id, skill_lv_max...)...');
+  const keywords = ['resource_id', 'skill_lv_max', '"rarity"', 'leader_skill', 'passive_skill'];
+  report.keywordContexts = {};
+  for (const kw of keywords) {
+    const idx = data.indexOf(kw);
+    if (idx !== -1) {
+      report.keywordContexts[kw] = data.slice(Math.max(0, idx - 800), idx + 1500);
+    }
+  }
 }
 
 fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
