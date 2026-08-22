@@ -119,10 +119,11 @@ function main() {
       (c.atk_max ?? 0) < 25000 &&
       (c.atk_hipo ?? 0) < 25000 &&
       !(c.optimal_awakening_grow_type != null && c.optimal_awakening_step == null) &&
-      !String(c.id).startsWith('4'),
+      !String(c.id).startsWith('4') &&
+      (c.resource_id != null || c.icon_id != null),
   );
   console.log(
-    `${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion/forme dérivée retirées.`,
+    `${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion/forme dérivée/sans image retirées.`,
   );
 
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
