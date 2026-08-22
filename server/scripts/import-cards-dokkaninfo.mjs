@@ -90,11 +90,30 @@ function main() {
   // Z-Battle), donc le premier chiffre de l'id seul n'est pas fiable : on se
   // base uniquement sur cette stat à 500.
   // Les formes géantes (transformation en combat, pas une vraie carte) ont
-  // un ATK anormalement élevé (>= 20000) par rapport à une carte normale.
+  // un ATK anormalement élevé. Seuil provisoire relevé à 30000 : un vrai
+  // LR EZA (Super Saiyan 4 Goku & Vegeta, id 1022421) atteint déjà 22185,
+  // donc 20000 excluait à tort de vraies cartes. À remplacer par le même
+  // signal grow_type/step que les fusions dès qu'on aura confirmé qu'il
+  // s'applique aussi aux formes géantes.
+  //
+  // Les fusions en combat (ex: Gogeta obtenu en fusionnant Goku & Vegeta)
+  // ont exactement les MÊMES stats que la vraie carte (donc le filtre ATK ne
+  // les attrape pas), mais partagent un signal différent : elles ont un
+  // `optimal_awakening_grow_type` renseigné (elles appartiennent au même
+  // "arbre d'évolution" que la vraie carte) alors que leur
+  // `optimal_awakening_step` reste vide, car elles ne sont pas elles-mêmes
+  // une étape d'éveil franchissable. Une vraie carte de base (jamais encore
+  // éveillée) a les deux champs vides, donc ce n'est que la combinaison
+  // "grow_type rempli + step vide" qui signale une forme dérivée.
   const playableCards = allCards.filter(
-    (c) => c.avg_max !== 500 && c.avg_hipo !== 500 && (c.atk_max ?? 0) < 20000 && (c.atk_hipo ?? 0) < 20000,
+    (c) =>
+      c.avg_max !== 500 &&
+      c.avg_hipo !== 500 &&
+      (c.atk_max ?? 0) < 30000 &&
+      (c.atk_hipo ?? 0) < 30000 &&
+      !(c.optimal_awakening_grow_type != null && c.optimal_awakening_step == null),
   );
-  console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante retirées.`);
+  console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi/forme géante/fusion retirées.`);
 
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
   // Dokkan Awaken -> TUR après une évolution supplémentaire). Le jeu leur
