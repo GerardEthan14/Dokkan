@@ -82,10 +82,14 @@ function main() {
   const allCards = JSON.parse(decoded);
   console.log(`${allCards.length} cartes trouvées.`);
 
-  // Les identifiants commençant par "9" sont des apparitions boss/ennemi
-  // (le personnage réutilisé comme adversaire en combat), pas de vraies
-  // cartes à collectionner. On les retire avant tout regroupement.
-  const playableCards = allCards.filter((c) => !String(c.id).startsWith('9'));
+  // Les apparitions boss/ennemi (le personnage réutilisé comme adversaire en
+  // combat, pas une vraie carte à collectionner) ont une stat moyenne (avg)
+  // figée à 500, alors que les vraies cartes ont des valeurs qui varient
+  // dans les milliers. Certains boss ont un id commençant par "9" ET sont
+  // pourtant de vraies cartes invocables (ex: anciens boss d'Extreme
+  // Z-Battle), donc le premier chiffre de l'id seul n'est pas fiable : on se
+  // base uniquement sur cette stat à 500.
+  const playableCards = allCards.filter((c) => c.avg_max !== 500 && c.avg_hipo !== 500);
   console.log(`${allCards.length - playableCards.length} apparitions boss/ennemi retirées.`);
 
   // Une même carte a plusieurs "formes" au fil de ses éveils (SSR -> UR après
