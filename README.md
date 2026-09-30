@@ -42,6 +42,32 @@ Ouvre ensuite http://localhost:3000 dans ton navigateur.
   identifiants différents et tu te retrouverais avec des cartes en double. Choisis-en
   une (la complète, idéalement).
 
+- **Base de cartes complète, via dbz-dokkanbattle.com (alternative recommandée sur
+  mobile)** : `npm run import-cards-dbzdb` importe la base depuis
+  [dbz-dokkanbattle.com](https://dbz-dokkanbattle.com/cards). Ce site liste déjà **une
+  seule carte par personnage** (pas besoin de deviner les lignées d'évolution comme
+  avec dokkaninfo.com) et indique la rareté directement dans le nom du fichier image,
+  ce qui rend l'import plus fiable. Comme dokkaninfo.com, ce site bloque les requêtes
+  automatisées : il faut récupérer la page à la main, ce qui marche aussi bien
+  **depuis un téléphone** :
+
+  1. Va sur https://dbz-dokkanbattle.com/cards, attends que toute la liste charge
+     (utilise les filtres/le défilement si besoin pour que toutes les cartes soient
+     affichées avant l'étape suivante)
+  2. Menu du navigateur → **"Enregistrer la page"** / **"Télécharger la page"** — ça doit
+     produire un fichier `.mhtml` (le format qui embarque toute la page en un seul
+     fichier)
+  3. `node server/scripts/import-cards-dbzdb.mjs "chemin/vers/le/fichier.mhtml"` (ou
+     `npm run import-cards-dbzdb -- "chemin/vers/le/fichier.mhtml"`)
+
+  Les cartes "forme géante" (transformations en combat, jamais de vraies cartes à
+  collectionner) sont exclues automatiquement. Les cartes "Fusion" (Gogeta, Gotenks...)
+  sont toutes gardées, à toi de trier celles qui comptent pour ta collection.
+
+  ⚠️ Comme pour dokkaninfo.com, ne mélange pas les méthodes d'import : chaque source a
+  ses propres identifiants, donc changer de source réinitialise le suivi de ta
+  collection (il faudra ressaisir ta progression).
+
 - **Ta progression** est stockée dans un fichier local `data/dokkan.sqlite3` (créé
   automatiquement, ignoré par git) : rien n'est envoyé sur internet, tout reste sur
   ta machine (ou sur ton volume persistant si tu déploies en ligne, voir plus bas).
